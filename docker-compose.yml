@@ -1,22 +1,22 @@
 version: '3'
 
 services:
-  mongodb:
-    image: mongo
-    container_name: "mongodb_dc"
-    environment:
-      - MONGO_DATA_DIR=/data/db
-      - MONGO_LOG_DIR=/dev/null
-      - MONGO_INITDB_DATABASE=admin
-      - MONGO_INITDB_ROOT_USERNAME=localhost
-      - MONGO_INITDB_ROOT_PASSWORD=adithganteng
-    volumes:
-      - ./../data/mongo:/data/db
-    networks:
-      - web
-    ports:
-      - 27017:27017
-    command: mongod --auth
+  # mongodb:
+  #   image: mongo
+  #   container_name: "mongodb_dc"
+  #   environment:
+  #     - MONGO_DATA_DIR=/data/db
+  #     - MONGO_LOG_DIR=/dev/null
+  #     - MONGO_INITDB_DATABASE=admin
+  #     - MONGO_INITDB_ROOT_USERNAME=localhost
+  #     - MONGO_INITDB_ROOT_PASSWORD=adithganteng
+  #   volumes:
+  #     - ./../data/mongo:/data/db
+  #   networks:
+  #     - web
+  #   ports:
+  #     - 27017:27017
+  #   command: mongod --auth
   
   redis:
     image: redis
@@ -30,17 +30,19 @@ services:
       - web
   
   zookeeper:
-    image: wurstmeister/zookeeper
+    image: confluentinc/cp-zookeeper:3.1.1
     container_name: "zookeeper_dc"
     ports:
       - 2181:2181
     volumes: 
       - ./../data/zookeeper:/opt/zookeeper-3.4.13/data
+    environment: 
+      ZOOKEEPER_CLIENT_PORT: 2181
     networks:
       - web
   
   kafka:
-    image: wurstmeister/kafka
+    image: confluentinc/cp-kafka:3.1.1
     container_name: "kafka_dc"
     ports:
       - 9092:9092
@@ -51,124 +53,125 @@ services:
       KAFKA_CREATE_TOPICS: "test:1:1"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ZOOKEEPER_TIMEOUT_MS: 36000
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
     volumes:
       - ./../data/kafka:/kafka
     networks:
       - web
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.1.1
-    container_name: "elk_elasticsearch_dc"
-    volumes:
-      - ./../data/elasticsearch:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    environment:
-      - "network.host:0.0.0.0"
-      - "xpack.security.enabled:true"
-      - "xpack.monitoring.collection.enabled:true"
-      - "discovery.type=single-node"
-      - "ES_JAVA_OPTS:-Xmx256m-Xms256m"
-    networks:
-      - web
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.1.1
+  #   container_name: "elk_elasticsearch_dc"
+  #   volumes:
+  #     - ./../data/elasticsearch:/usr/share/elasticsearch/data
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9300"
+  #   environment:
+  #     - "network.host:0.0.0.0"
+  #     - "xpack.security.enabled:true"
+  #     - "xpack.monitoring.collection.enabled:true"
+  #     - "discovery.type=single-node"
+  #     - "ES_JAVA_OPTS:-Xmx256m-Xms256m"
+  #   networks:
+  #     - web
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.1.1
-    container_name: "elk_kibana_dc"
-    environment:
-      - "server.name:kibana"
-      - "server.host:0.0.0.0"
-      - "monitoring.ui.container.elasticsearch.enabled:true"
-      - "ELASTICSEARCH_URL:'http://elasticsearch:9200'"
-      - "ELASTICSEARCH_HOSTS:['http://elasticsearch:9200']"
-    ports:
-      - "5601:5601"
-    networks:
-      - web
-    depends_on:
-      - elasticsearch
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:7.1.1
+  #   container_name: "elk_kibana_dc"
+  #   environment:
+  #     - "server.name:kibana"
+  #     - "server.host:0.0.0.0"
+  #     - "monitoring.ui.container.elasticsearch.enabled:true"
+  #     - "ELASTICSEARCH_URL:'http://localhost:9200'"
+  #     - "ELASTICSEARCH_HOSTS:['http://localhost:9200']"
+  #   ports:
+  #     - "5601:5601"
+  #   networks:
+  #     - web
+  #   depends_on:
+  #     - elasticsearch
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash:7.1.1
-    container_name: "elk_logstash_dc"
-    volumes:
-      - ./../data/logstash/pipeline:/usr/share/logstash/pipeline:ro
-    ports:
-      - "5044:5044"
-      - "5000:5000/tcp"
-      - "5000:5000/udp"
-      - "9600:9600"
-    environment:
-      - "xpack.monitoring.enabled:true"
-      - "xpack.monitoring.elasticsearch.hosts:['http://elasticsearch:9200']"
-      - "LS_JAVA_OPTS:-Xmx256m-Xms256m"
-    networks:
-      - web
-    depends_on:
-      - elasticsearch
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:7.1.1
+  #   container_name: "elk_logstash_dc"
+  #   volumes:
+  #     - ./../data/logstash/pipeline:/usr/share/logstash/pipeline:ro
+  #   ports:
+  #     - "5044:5044"
+  #     - "5000:5000/tcp"
+  #     - "5000:5000/udp"
+  #     - "9600:9600"
+  #   environment:
+  #     - "xpack.monitoring.enabled:true"
+  #     - "xpack.monitoring.elasticsearch.hosts:['http://localhost:9200']"
+  #     - "LS_JAVA_OPTS:-Xmx256m-Xms256m"
+  #   networks:
+  #     - web
+  #   depends_on:
+  #     - elasticsearch
     
-  minio: 
-    image: minio/minio
-    container_name: minio_dc
-    volumes: 
-      - ./../data/minio:/data
-    ports: 
-      - 7000:9000
-    command: server ./../data/minio
-    environment: 
-      - "MINIO_ACCESS_KEY=MINIOADITH"
-      - "MINIO_SECRET_KEY=ADITHGANTENG"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+  # minio: 
+  #   image: minio/minio
+  #   container_name: minio_dc
+  #   volumes: 
+  #     - ./../data/minio:/data
+  #   ports: 
+  #     - 7000:9000
+  #   command: server ./../data/minio
+  #   environment: 
+  #     - "MINIO_ACCESS_KEY=MINIOADITH"
+  #     - "MINIO_SECRET_KEY=ADITHGANTENG"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:7000/minio/health/live"]
+  #     interval: 30s
+  #     timeout: 20s
+  #     retries: 3
 
-  mysql:
-    image: mysql:latest
-    container_name: mysql_dc
-    ports: 
-      - 3306:3306
-    volumes: 
-      - ./../data/mysql:/var/lib/mysql
-      - ./init_mysql.sql:/docker-entrypoint-initdb.d/setup.sql
-    environment: 
-      - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
-    networks: 
-      - web
+  # mysql:
+  #   image: mysql:latest
+  #   container_name: mysql_dc
+  #   ports: 
+  #     - 3306:3306
+  #   volumes: 
+  #     - ./../data/mysql:/var/lib/mysql
+  #     - ./init_mysql.sql:/docker-entrypoint-initdb.d/setup.sql
+  #   environment: 
+  #     - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
+  #   networks: 
+  #     - web
 
-  postgre:
-    image: postgres:9.6
-    container_name: postgre_dc
-    ports: 
-      - 5432:5432
-    volumes: 
-      - ./../data/postgre:/var/lib/postgresql/data
-    environment: 
-      - "POSTGRES_PASSWORD=123qweasd"
-    networks: 
-      - web
+  # postgre:
+  #   image: postgres:9.6
+  #   container_name: postgre_dc
+  #   ports: 
+  #     - 5432:5432
+  #   volumes: 
+  #     - ./../data/postgre:/var/lib/postgresql/data
+  #   environment: 
+  #     - "POSTGRES_PASSWORD=123qweasd"
+  #   networks: 
+  #     - web
 
-  oracle:
-    image: store/oracle/database-enterprise:12.2.0.1
-    container_name: oracle_dc
-    ports:
-      - 1521:1521
-    volumes:
-      - ./../data/oracle:/opt/oracle/oradata
-    environment:
-      - ORACLE_SID=ORACLEDB
-      - ORACLE_PDB=PDB
-      - ORACLE_PWD=123qweasd
+  # oracle:
+  #   image: store/oracle/database-enterprise:12.2.0.1
+  #   container_name: oracle_dc
+  #   ports:
+  #     - 1521:1521
+  #   volumes:
+  #     - ./../data/oracle:/opt/oracle/oradata
+  #   environment:
+  #     - ORACLE_SID=ORACLEDB
+  #     - ORACLE_PDB=PDB
+  #     - ORACLE_PWD=123qweasd
 
-  adminer:
-    image: adminer:latest
-    container_name: adminer_sql_dc
-    ports: 
-      - 8080:8080
-    networks: 
-      - web
+  # adminer:
+  #   image: adminer:latest
+  #   container_name: adminer_sql_dc
+  #   ports: 
+  #     - 8080:8080
+  #   networks: 
+  #     - web
 
 networks:
   web:
