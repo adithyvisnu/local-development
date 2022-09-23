@@ -55,6 +55,21 @@ services:
     networks:
       - web
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    networks:
+      - web
+
+
   # zookeeper:
   #   image: 'bitnami/zookeeper:3.4.12'
   #   container_name: "zookeeper_dc"
