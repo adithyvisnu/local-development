@@ -1,22 +1,22 @@
 version: '3'
 
 services:
-  # mongodb:
-  #   image: mongo
-  #   container_name: "mongodb_dc"
-  #   environment:
-  #     - MONGO_DATA_DIR=/data/db
-  #     - MONGO_LOG_DIR=/dev/null
-  #     - MONGO_INITDB_DATABASE=admin
-  #     - MONGO_INITDB_ROOT_USERNAME=localhost
-  #     - MONGO_INITDB_ROOT_PASSWORD=adithganteng
-  #   volumes:
-  #     - ./../data/mongo:/data/db
-  #   networks:
-  #     - web
-  #   ports:
-  #     - 27017:27017
-  #   command: mongod --auth
+  mongodb:
+    image: mongo
+    container_name: "mongodb_dc"
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+      - MONGO_INITDB_DATABASE=admin
+      - MONGO_INITDB_ROOT_USERNAME=localhost
+      - MONGO_INITDB_ROOT_PASSWORD=adithganteng
+    volumes:
+      - ./../data/mongo:/data/db
+    networks:
+      - web
+    ports:
+      - 27017:27017
+    command: mongod --auth
   
   redis:
     image: redis
@@ -47,6 +47,12 @@ services:
     depends_on:
       - zookeeper
     environment:
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_PORT: 9092
+    #   port = 9092
+    # advertised.host.name = localhost or 127.0.0.1
+    # advertised.listeners=PLAINTEXT://YOUR_IP:9092
+    # listeners = PLAINTEXT://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
       KAFKA_LISTENERS: PLAINTEXT://:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -55,19 +61,19 @@ services:
     networks:
       - web
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui
-    container_name: kafka-ui
-    ports:
-      - "8080:8080"
-    depends_on:
-      - kafka
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    networks:
-      - web
+  # kafka-ui:
+  #   image: provectuslabs/kafka-ui
+  #   container_name: kafka-ui
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     - KAFKA_CLUSTERS_0_NAME=local
+  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+  #     - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+  #   networks:
+  #     - web
 
 
   # zookeeper:
@@ -97,57 +103,57 @@ services:
   #   networks:
   #     - web
       
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.1.1
-  #   container_name: "elk_elasticsearch_dc"
-  #   volumes:
-  #     - ./../data/elasticsearch:/usr/share/elasticsearch/data
-  #   ports:
-  #     - "9200:9200"
-  #     - "9300:9300"
-  #   environment:
-  #     - "network.host: 0.0.0.0"
-  #     - "xpack.security.enabled: true"
-  #     - "xpack.monitoring.collection.enabled: true"
-  #     - "discovery.type=single-node"
-  #     - "ES_JAVA_OPTS: -Xmx256m -Xms256m"
-  #   networks:
-  #     - web
+  
+  # ELK
+  elasticsearch:
+    build:
+      context: deployments/elk/elasticsearch/
+      # args:
+      #   ELK_VERSION: $ELK_VERSION
+    volumes:
+      - ./deployments/elk/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./deployments/elk/elasticsearch/esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      ELASTIC_PASSWORD: changeme
+    networks:
+      - web
 
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:7.1.1
-  #   container_name: "elk_kibana_dc"
-  #   environment:
-  #     - "server.name: kibana"
-  #     - "server.host: 0.0.0.0"
-  #     - "monitoring.ui.container.elasticsearch.enabled: true"
-  #     - "ELASTICSEARCH_URL: 'http://elasticsearch:9200'"
-  #     - "ELASTICSEARCH_HOSTS: ['http://elasticsearch:9200']"
-  #   ports:
-  #     - "5601:5601"
-  #   networks:
-  #     - web
-  #   depends_on:
-  #     - elasticsearch
+  logstash:
+    build:
+      context: deployments/elk/logstash/
+      # args:
+      #   ELK_VERSION: $ELK_VERSION
+    volumes:
+      - ./deployments/elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./deployments/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - web
+    depends_on:
+      - elasticsearch
 
-  # logstash:
-  #   image: docker.elastic.co/logstash/logstash:7.1.1
-  #   container_name: "elk_logstash_dc"
-  #   volumes:
-  #     - ./../data/logstash/pipeline:/usr/share/logstash/pipeline:ro
-  #   ports:
-  #     - "5044:5044"
-  #     - "5000:5000/tcp"
-  #     - "5000:5000/udp"
-  #     - "9600:9600"
-  #   environment:
-  #     - "xpack.monitoring.enabled: true"
-  #     - "xpack.monitoring.elasticsearch.hosts: [ 'http://elasticsearch:9200' ]"
-  #     - "LS_JAVA_OPTS: -Xmx256m -Xms256m"
-  #   networks:
-  #     - web
-  #   depends_on:
-  #     - elasticsearch
+  kibana:
+    build:
+      context: deployments/elk/kibana/
+      # args:
+      #   ELK_VERSION: $ELK_VERSION
+    volumes:
+      - ./deployments/elk/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "5601:5601"
+    networks:
+      - web
+    depends_on:
+      - elasticsearch
+
     
   # minio: 
   #   image: minio/minio
