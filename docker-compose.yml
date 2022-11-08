@@ -117,7 +117,7 @@ services:
       #   ELK_VERSION: $ELK_VERSION
     volumes:
       - ./deployments/elk/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-      - ./deployments/elk/elasticsearch/esdata:/usr/share/elasticsearch/data
+      - ./deployments/elk/elasticsearch/esdata:/var/lib/elasticsearch/data
     ports:
       - "9200:9200"
       - "9300:9300"
