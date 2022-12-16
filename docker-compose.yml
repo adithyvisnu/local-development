@@ -191,17 +191,18 @@ services:
     networks: 
       - web
 
-  # postgre:
-  #   image: postgres:9.6
-  #   container_name: postgre_dc
-  #   ports: 
-  #     - 5432:5432
-  #   volumes: 
-  #     - ./../data/postgre:/var/lib/postgresql/data
-  #   environment: 
-  #     - "POSTGRES_PASSWORD=123qweasd"
-  #   networks: 
-  #     - web
+  postgre:
+    image: postgres:12
+    container_name: postgre_dc
+    ports: 
+      - 5432:5432
+    volumes: 
+      - ./../data/postgre:/var/lib/postgresql/data
+    environment: 
+      - "POSTGRES_PASSWORD=123qweasd"
+      - "PGDATA=/var/lib/postgresql/data/pgdata"
+    networks: 
+      - web
 
   # oracle:
   #   image: store/oracle/database-enterprise:12.2.0.1
